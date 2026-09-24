@@ -3,6 +3,7 @@
  * the refresh token is an httpOnly cookie on the API host.
  */
 const ACCESS_KEY = 'abp_admin_access';
+const REFRESH_KEY = 'abp_admin_refresh';
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
 
@@ -31,6 +32,25 @@ export function setAdminAccessToken(token: string | null) {
   }
 }
 
+function getAdminRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return sessionStorage.getItem(REFRESH_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAdminRefreshToken(token: string | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (token) sessionStorage.setItem(REFRESH_KEY, token);
+    else sessionStorage.removeItem(REFRESH_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 let refreshing: Promise<string | null> | null = null;
 
 export function refreshAdminAccessToken(): Promise<string | null> {
@@ -39,16 +59,22 @@ export function refreshAdminAccessToken(): Promise<string | null> {
     refreshing = fetch(`${API_BASE}/v1/admin-auth/refresh`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-Abp-Client': 'admin' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Abp-Client': 'admin',
+        ...(getAdminRefreshToken() ? { 'X-Abp-Refresh': getAdminRefreshToken()! } : {}),
+      },
     })
       .then(async (res) => {
         if (!res.ok) {
           setAdminAccessToken(null);
+          setAdminRefreshToken(null);
           return null;
         }
-        const body = (await res.json()) as { accessToken?: string };
+        const body = (await res.json()) as { accessToken?: string; refreshToken?: string };
         if (!body.accessToken) return null;
         setAdminAccessToken(body.accessToken);
+        if (body.refreshToken) setAdminRefreshToken(body.refreshToken);
         return body.accessToken;
       })
       .catch(() => null)

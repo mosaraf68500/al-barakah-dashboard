@@ -1,4 +1,4 @@
-import { ApiError, apiFetch, post, setAdminAccessToken } from '@/lib/api/http';
+import { ApiError, apiFetch, post, setAdminAccessToken, setAdminRefreshToken } from '@/lib/api/http';
 import type { AdminSession } from '@/types/admin';
 import type { AdminAuthAdapter } from './AdminAuthAdapter';
 import { encodePending, encodeSession, PENDING_COOKIE, SESSION_COOKIE } from './cookie';
@@ -40,8 +40,9 @@ export const jwtAdminAdapter: AdminAuthAdapter = {
   async verifyOtp(code) {
     const email = pendingEmail();
     if (!email) throw new ApiError('সেশনের মেয়াদ শেষ। আবার লগইন করুন।', 401);
-    const res = await post<{ accessToken: string; session: AdminSession }>('/v1/admin-auth/verify-otp', { email, code: code.trim() });
+    const res = await post<{ accessToken: string; refreshToken?: string; session: AdminSession }>('/v1/admin-auth/verify-otp', { email, code: code.trim() });
     setAdminAccessToken(res.accessToken);
+    setAdminRefreshToken(res.refreshToken ?? null);
     writeCookie(SESSION_COOKIE, encodeSession(res.session), 60 * 60 * 12);
     clearCookie(PENDING_COOKIE);
     return res.session;
@@ -60,6 +61,7 @@ export const jwtAdminAdapter: AdminAuthAdapter = {
       /* already signed out */
     }
     setAdminAccessToken(null);
+    setAdminRefreshToken(null);
     clearCookie(SESSION_COOKIE);
     clearCookie(PENDING_COOKIE);
   },
