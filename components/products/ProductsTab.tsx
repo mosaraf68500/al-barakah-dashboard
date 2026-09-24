@@ -70,7 +70,7 @@ export function ProductsTab() {
 
   return (
 <>
-          <div className="p-6 sm:p-8 space-y-6 max-w-7xl w-full">
+          <div className="p-6 sm:p-8 space-y-6 w-full">
             {/* Action Bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
               <div className="relative flex-1 max-w-md">

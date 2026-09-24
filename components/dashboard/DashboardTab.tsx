@@ -28,7 +28,7 @@ export function DashboardTab() {
   const recentOrders = sortOrdersNewestFirst(orders).slice(0, 5);
 
   return (
-          <div className="p-6 sm:p-8 space-y-6 max-w-7xl w-full">
+          <div className="p-6 sm:p-8 space-y-6 w-full">
             
             {/* 4 KPI Top Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">

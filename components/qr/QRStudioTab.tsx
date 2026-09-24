@@ -16,7 +16,7 @@ export function QRStudioTab() {
 
   return (
 <>
-          <div className="p-6 sm:p-8 space-y-6 max-w-7xl w-full">
+          <div className="p-6 sm:p-8 space-y-6 w-full">
             <div className="bg-gradient-to-br from-[#03251a] via-[#053828] to-[#0a5c36] text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-xl border border-amber-400/30">
               <div className="relative z-10 max-w-2xl space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-bold">

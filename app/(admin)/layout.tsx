@@ -14,9 +14,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const remainingMinutes = useInactivityLock(() => void logout());
 
   return (
-    <div className="min-h-screen bg-[#F4F6F8] flex text-stone-800 antialiased font-sans relative">
+    <div className="h-screen overflow-hidden bg-[#F4F6F8] flex text-stone-800 antialiased font-sans relative">
       <Sidebar mobileNavOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 w-full h-screen overflow-y-auto lg:ml-64">
         <Header remainingMinutes={remainingMinutes} onOpenNav={() => setMobileNavOpen(true)} />
         {children}
       </main>

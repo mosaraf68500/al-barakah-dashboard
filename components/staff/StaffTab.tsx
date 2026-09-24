@@ -41,7 +41,7 @@ export function StaffTab() {
   };
 
   return (
-          <div className="p-6 sm:p-8 space-y-6 max-w-7xl w-full">
+          <div className="p-6 sm:p-8 space-y-6 w-full">
             
             {/* Phase 2 stub notice (replaces the legacy "RBAC" banner, whose claims were never enforced) */}
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">

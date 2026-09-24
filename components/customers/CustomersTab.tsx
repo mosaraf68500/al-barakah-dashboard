@@ -10,7 +10,7 @@ export function CustomersTab() {
   const symbol = '৳';
 
   return (
-          <div className="p-6 sm:p-8 space-y-6 max-w-7xl w-full">
+          <div className="p-6 sm:p-8 space-y-6 w-full">
             <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6">
               <h3 className="text-base font-bold text-stone-900 font-serif mb-4">Customer Directory</h3>
               <div className="overflow-x-auto">

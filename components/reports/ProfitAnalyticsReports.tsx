@@ -297,7 +297,7 @@ export const ProfitAnalyticsReports: React.FC<ProfitAnalyticsReportsProps> = ({
   });
 
   return (
-    <div className="p-4 sm:p-7 lg:p-8 space-y-6 max-w-7xl w-full">
+    <div className="p-4 sm:p-7 lg:p-8 space-y-6 w-full">
       {/* 1. Header & Filter Bar */}
       <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>

@@ -43,7 +43,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
   };
 
   return (
-          <div className={embedded ? 'space-y-6' : 'p-6 sm:p-8 space-y-6 max-w-7xl w-full'}>
+          <div className={embedded ? 'space-y-6' : 'p-6 sm:p-8 space-y-6 w-full'}>
             <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
                 <div>

@@ -52,7 +52,7 @@ export function Sidebar({ mobileNavOpen, onClose }: { mobileNavOpen: boolean; on
       {mobileNavOpen && <div onClick={onClose} className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs" />}
 
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#03251a] text-stone-200 flex flex-col shrink-0 min-h-screen border-r border-emerald-950/40 select-none transform transition-transform duration-200 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 h-screen w-64 bg-[#03251a] text-stone-200 flex flex-col shrink-0 border-r border-emerald-950/40 select-none transform transition-transform duration-200 ease-in-out ${
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >

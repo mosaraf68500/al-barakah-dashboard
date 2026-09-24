@@ -185,8 +185,8 @@ export function SettingsTab() {
 
   return (
 <>
-          <div className="p-6 sm:p-8 space-y-6 max-w-7xl w-full">
-            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs max-w-3xl">
+          <div className="p-6 sm:p-8 space-y-6 w-full">
+            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-stone-100">
                 <div>
                   <h3 className="text-base font-bold text-stone-900 font-serif">Store Configuration & Logistics</h3>

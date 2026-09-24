@@ -37,7 +37,7 @@ export function LandingPagesTab() {
 
   return (
 <>
-          <div className="p-6 sm:p-8 space-y-6 max-w-7xl w-full">
+          <div className="p-6 sm:p-8 space-y-6 w-full">
             {/* Top Banner */}
             <div className="bg-gradient-to-r from-stone-900 via-[#0a5c36] to-stone-900 p-6 sm:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
               <div className="absolute right-0 top-0 w-80 h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-400/20 via-transparent to-transparent pointer-events-none" />
