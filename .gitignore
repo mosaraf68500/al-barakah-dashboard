@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.env*.local
+next-env.d.ts
+*.tsbuildinfo
+
+# Real customer PII + live third-party secrets (snapshot of legacy Firestore) — never commit
+data/seed/*.json
+# TEMP Phase 2 runtime writes (edits made in the admin while running on seed data)
+data/runtime/

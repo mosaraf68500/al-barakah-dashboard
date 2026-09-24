@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    overflow-x: hidden;
+  }
+
+  /* Hide default scrollbars for modern seamless look while preserving smooth scrolling */
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+
+.font-bengali {
+  font-family: 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+.taka-price {
+  font-family: 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  color: #f38018;
+  letter-spacing: -0.02em;
+}
+
+/* Global scrollbar utility to hide ugly scrollbars on all containers */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ========================================================================= */
+/* LEVEL 1: IMAGE PROTECTION GUARDS (ANTI-THEFT & LONG-PRESS BLOCK)         */
+/* ========================================================================= */
+img {
+  -webkit-touch-callout: none !important; /* Disables iOS Safari image popup */
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+  pointer-events: none !important; /* Prevents mobile browsers from triggering native long-press download */
+}
+
+/* Allow pointer events for specific interactive items if needed */
+img.allow-interaction {
+  pointer-events: auto !important;
+}
+
+/* Transparent protection shield layer placed over image containers */
+.img-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
