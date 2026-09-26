@@ -268,7 +268,6 @@ export function getSettings(): AdminSettings {
     supportPhone: s.supportPhone ?? '01316534171',
     enableCustomerReviews: typeof s.enableCustomerReviews === 'boolean' ? s.enableCustomerReviews : true,
     enableCoupons: typeof s.enableCoupons === 'boolean' ? s.enableCoupons : false,
-    coupons: Array.isArray(s.coupons) ? s.coupons : [],
     heroBanners: s.heroBanners ?? null,
     topSelling: s.topSelling ?? null,
     deliveryConfig: { ...DEFAULT_DELIVERY_CONFIG, ...(s.deliveryConfig || {}) },

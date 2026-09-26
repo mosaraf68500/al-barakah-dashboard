@@ -1,5 +1,6 @@
 export * from './products';
 export * from './categories';
+export * from './coupons';
 export * from './orders';
 export * from './settings';
 export * from './reviews';

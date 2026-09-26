@@ -1,5 +1,5 @@
 import type { CategoryItem, Order, Product, ProductReview } from './index';
-import type { CourierConfig, DeliveryConfig, OrderNotificationConfig, SeoConfig, FacebookPixelConfig, BKashPaymentConfig, CouponItem, HeroBannerConfig, HeroSlide, TopSellingSectionConfig } from './index';
+import type { CourierConfig, DeliveryConfig, OrderNotificationConfig, SeoConfig, FacebookPixelConfig, BKashPaymentConfig, HeroBannerConfig, HeroSlide, TopSellingSectionConfig } from './index';
 
 /** Approved role model (ADMIN_MIGRATION_PLAN Q1): exactly two roles. */
 export type AdminRole = 'super_admin' | 'admin';
@@ -39,8 +39,8 @@ export interface AdminSettings {
   storeName?: string;
   supportPhone?: string;
   enableCustomerReviews: boolean;
+  /** The coupon list itself lives in the dedicated Module 4 coupon API (`/v1/admin/coupons`), not in settings. */
   enableCoupons: boolean;
-  coupons: CouponItem[];
   heroBanners: HeroBannerConfig | HeroSlide[] | null;
   topSelling: TopSellingSectionConfig | null;
   deliveryConfig: DeliveryConfig;

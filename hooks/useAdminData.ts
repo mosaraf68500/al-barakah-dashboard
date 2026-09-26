@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAuditLogs, getCategories, getHealth, getOrders, getProducts, getReviews, getSettings, getStaff } from '@/lib/api';
+import { getAuditLogs, getCategories, getCoupons, getHealth, getOrders, getProducts, getReviews, getSettings, getStaff } from '@/lib/api';
 import { useAdminAuth } from '@/providers/AdminAuthProvider';
 
 export const qk = {
@@ -9,6 +9,7 @@ export const qk = {
   categories: ['categories'] as const,
   orders: ['orders'] as const,
   settings: ['settings'] as const,
+  coupons: ['coupons'] as const,
   reviews: ['reviews'] as const,
   staff: ['staff'] as const,
   audit: ['audit'] as const,
@@ -20,6 +21,7 @@ export const useProducts = (includeArchived = false) =>
 export const useCategories = () => useQuery({ queryKey: qk.categories, queryFn: getCategories });
 export const useOrders = () => useQuery({ queryKey: qk.orders, queryFn: getOrders });
 export const useSettings = () => useQuery({ queryKey: qk.settings, queryFn: getSettings });
+export const useCoupons = () => useQuery({ queryKey: qk.coupons, queryFn: getCoupons });
 export const useReviews = () => useQuery({ queryKey: qk.reviews, queryFn: getReviews, refetchOnMount: 'always', refetchOnWindowFocus: true });
 export const useHealth = () => useQuery({ queryKey: qk.health, queryFn: getHealth, refetchInterval: 60_000 });
 

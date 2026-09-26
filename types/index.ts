@@ -362,6 +362,12 @@ export interface CouponItem {
   minSpend: number;
   status: 'active' | 'expired';
   usageCount: number;
+  isActive: boolean;
+  maxDiscountAmount?: number;
+  usageLimit?: number;
+  expiresAt?: string;
+  deletedAt?: string | null;
+  createdAt?: string;
 }
 
 export interface SeoConfig {

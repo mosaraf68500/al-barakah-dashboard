@@ -2,25 +2,19 @@
 
 import { Tag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { saveSettings } from '@/lib/api';
-import { qk, useInvalidate, useSettings } from '@/hooks/useAdminData';
+import { createCoupon, deleteCoupon, saveSettings } from '@/lib/api';
+import { qk, useCoupons, useInvalidate, useSettings } from '@/hooks/useAdminData';
 import { useToast } from '@/providers/ToastProvider';
-import type { CouponItem } from '@/types';
 
 export function CouponsTab() {
   const showToast = useToast();
   const invalidate = useInvalidate();
   const { data: settings } = useSettings();
+  const { data: coupons = [] } = useCoupons();
   const enableCoupons = settings?.enableCoupons ?? false;
-  const coupons: CouponItem[] = settings?.coupons ?? [];
   const [newCouponCode, setNewCouponCode] = useState('');
   const [newCouponDiscount, setNewCouponDiscount] = useState(10);
   const [newCouponMin, setNewCouponMin] = useState(1000);
-
-  const persist = async (next: CouponItem[]) => {
-    await saveSettings({ coupons: next });
-    await invalidate(qk.settings);
-  };
 
   const onToggleEnableCoupons = async (enabled: boolean) => {
     await saveSettings({ enableCoupons: enabled });
@@ -33,21 +27,18 @@ export function CouponsTab() {
     if (!newCouponCode.trim()) return;
     const codeClean = newCouponCode.trim().toUpperCase().replace(/\s+/g, '');
     if (coupons.some((c) => c.code === codeClean)) {
-      alert('এই কুপন কোডটি ইতিমধ্যে তালিকায় বিদ্যমান রয়েছে!');
+      showToast('এই কুপন কোডটি ইতিমধ্যে তালিকায় বিদ্যমান রয়েছে!', 'error');
       return;
     }
-    const newC: CouponItem = { id: `c-${Date.now()}`, code: codeClean, discountPercent: Number(newCouponDiscount), minSpend: Number(newCouponMin), status: 'active', usageCount: 0 };
-    try {
-      await persist([newC, ...coupons]);
-      setNewCouponCode('');
-      showToast('✅ নতুন কুপন ডাটাবেজে যুক্ত হয়েছে!');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not save the coupon.');
-    }
+    await createCoupon({ code: codeClean, discountPercent: Number(newCouponDiscount), minSpend: Number(newCouponMin) });
+    await invalidate(qk.coupons);
+    setNewCouponCode('');
+    showToast('✅ নতুন কুপন ডাটাবেজে যুক্ত হয়েছে!');
   };
 
   const handleDeleteCoupon = async (id: string) => {
-    await persist(coupons.filter((item) => item.id !== id));
+    await deleteCoupon(id);
+    await invalidate(qk.coupons);
     showToast('🗑️ কুপন মুছে ফেলা হয়েছে');
   };
 
