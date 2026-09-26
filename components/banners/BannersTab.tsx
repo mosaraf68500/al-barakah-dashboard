@@ -4,7 +4,7 @@ import { Check, CheckCircle2, Flame, Plus, RotateCcw, Sparkles, Tag, Trash2, Upl
 import { SafeImage } from '@/components/shared/SafeImage';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { saveSettings } from '@/lib/api';
+import { saveSettings, uploadImageDataUrl } from '@/lib/api';
 import { qk, useCategories, useInvalidate, useProducts, useSettings } from '@/hooks/useAdminData';
 import { compressDataUrl, compressImageFile } from '@/lib/imageCompressor';
 import { normalizeHero, normalizeTopSelling } from '@/lib/domain/config';
@@ -46,13 +46,17 @@ export function BannersTab() {
 
   const handleSaveBanners = async (newCfg: HeroBannerConfig) => {
     setBannerConfigState(newCfg);
-    try {
-      await onUpdateHeroBannerConfig(newCfg);
-      setBannerSavedToast(true);
-      setTimeout(() => setBannerSavedToast(false), 2500);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'ব্যানার সেভ করা যায়নি।');
-    }
+    // Device uploads land in state as base64 data URLs; the backend only accepts hosted http(s) URLs, so
+    // upload anything that's still a data URL to Cloudinary before saving (already-hosted URLs pass through unchanged).
+    const uploadedCfg: HeroBannerConfig = {
+      ...newCfg,
+      slides: await Promise.all(newCfg.slides.map(async (s) => ({ ...s, image: await uploadImageDataUrl(s.image, 'banners') }))),
+      promoCard: { ...newCfg.promoCard, image: await uploadImageDataUrl(newCfg.promoCard.image, 'banners') },
+    };
+    setBannerConfigState(uploadedCfg);
+    await onUpdateHeroBannerConfig(uploadedCfg);
+    setBannerSavedToast(true);
+    setTimeout(() => setBannerSavedToast(false), 2500);
   };
 
   const handleHeroSlideImageUpload = async (slideId: string, file: File) => {
@@ -245,7 +249,7 @@ export function BannersTab() {
                             type="button"
                             onClick={() => {
                               if (bannerConfigState.slides.length <= 1) {
-                                alert('At least one slide is required.');
+                                showToast('At least one slide is required.', 'error');
                                 return;
                               }
                               const updated = bannerConfigState.slides.filter((s) => s.id !== slide.id);
