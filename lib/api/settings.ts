@@ -1,5 +1,11 @@
 import type { AdminSettings, IntegrationTestResult } from '@/types/admin';
+import type { TopSellingSectionConfig } from '@/types';
 import { ApiError, apiFetch, patch, post } from './http';
+
+/** `topSelling` may be a single-flag patch (`{ enabled }`). The settings merge keeps every omitted field, including the item list. */
+type SettingsPatch = Partial<Omit<AdminSettings, 'topSelling'>> & {
+  topSelling?: Partial<TopSellingSectionConfig> | null;
+};
 
 /** Optimistic-locking version from the last settings GET/save. Sent on every update; the backend answers 409 VERSION_CONFLICT when it is stale. */
 let settingsVersion: number | undefined;
@@ -10,7 +16,7 @@ const remember = <T extends { version?: number }>(s: T): T => {
 
 export const getSettings = () => apiFetch<AdminSettings>('/v1/admin/settings').then(remember);
 
-export const saveSettings = async (partial: Partial<AdminSettings>) => {
+export const saveSettings = async (partial: SettingsPatch) => {
   try {
     const body = settingsVersion === undefined ? partial : { ...partial, version: settingsVersion };
     return remember(await patch<AdminSettings>('/v1/admin/settings', body));

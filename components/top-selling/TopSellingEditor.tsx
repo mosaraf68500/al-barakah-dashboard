@@ -3,6 +3,7 @@
 import { Check, Flame, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { SafeImage } from '@/components/shared/SafeImage';
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { saveSettings } from '@/lib/api';
 import { qk, useInvalidate, useProducts, useSettings } from '@/hooks/useAdminData';
 import { compressImageFile } from '@/lib/imageCompressor';
@@ -13,10 +14,12 @@ import type { TopSellingItem, TopSellingSectionConfig } from '@/types';
 export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
   const showToast = useToast();
   const invalidate = useInvalidate();
+  const queryClient = useQueryClient();
   const { data: products = [] } = useProducts();
   const { data: settings } = useSettings();
   const [topSellingState, setTopSellingState] = useState<TopSellingSectionConfig>(() => normalizeTopSelling(settings?.topSelling));
   const [isSavingTopSelling, setIsSavingTopSelling] = useState(false);
+  const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
   const loaded = useRef(Boolean(settings));
 
   // Adopt the saved config once it arrives (first load only - never clobber unsaved edits on background refetches).
@@ -26,6 +29,21 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
       setTopSellingState(normalizeTopSelling(settings.topSelling));
     }
   }, [settings]);
+
+  const onToggleShowOnHomepage = async (enabled: boolean) => {
+    setIsTogglingEnabled(true);
+    try {
+      // Enabled only. The item draft stays in this component until Save Top Selling.
+      const saved = await saveSettings({ topSelling: { enabled } });
+      queryClient.setQueryData(qk.settings, saved);
+      setTopSellingState((current) => ({ ...current, enabled: Boolean(saved.topSelling?.enabled) }));
+      showToast(saved.topSelling?.enabled ? '✅ টপ সেলিং হোমপেজে দেখানো হচ্ছে' : '🚫 টপ সেলিং হোমপেজ থেকে লুকানো হয়েছে');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'টপ সেলিং সেভ করার সময় ত্রুটি হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+    } finally {
+      setIsTogglingEnabled(false);
+    }
+  };
 
   const handleSaveTopSellingAdmin = async (newCfg: TopSellingSectionConfig) => {
     setIsSavingTopSelling(true);
@@ -140,8 +158,9 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                     <input
                       type="checkbox"
                       checked={topSellingState.enabled}
+                      disabled={isTogglingEnabled}
                       onChange={(e) => {
-                        setTopSellingState({ ...topSellingState, enabled: e.target.checked });
+                        void onToggleShowOnHomepage(e.target.checked);
                       }}
                       className="rounded text-[#0a5c36] focus:ring-[#0a5c36] cursor-pointer"
                     />
