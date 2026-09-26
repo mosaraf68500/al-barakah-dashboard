@@ -93,12 +93,8 @@ export function SettingsTab() {
       requireAdvanceDeliveryCharge: Boolean(requireAdvanceDeliveryCharge),
       advanceDeliveryNotice: advanceDeliveryNotice.trim(),
     };
-    try {
-      await save({ deliveryConfig: updated, storeName: storeName.trim(), supportPhone: supportPhone.trim() });
-      showToast('✅ ডেলিভারি চার্জ ও অগ্রিম পেমেন্ট পলিসি সফলভাবে সেভ হয়েছে!');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'সেভ করা যায়নি।');
-    }
+    await save({ deliveryConfig: updated, storeName: storeName.trim(), supportPhone: supportPhone.trim() });
+    showToast('✅ ডেলিভারি চার্জ ও অগ্রিম পেমেন্ট পলিসি সফলভাবে সেভ হয়েছে!');
   };
 
   const onToggleCustomerReviews = async (enabled: boolean) => {
@@ -135,9 +131,6 @@ export function SettingsTab() {
       anchor.click();
       anchor.remove();
       showToast('সম্পূর্ণ ডাটাবেস ব্যাকআপ ফাইল সফলভাবে ডাউনলোড হয়েছে!');
-    } catch (error) {
-      console.error('Export backup error:', error);
-      alert('ডাটাবেস ব্যাকআপ তৈরি করতে সমস্যা হয়েছে। দয়া করে ডাটাবেস কানেকশন চেক করুন।');
     } finally {
       setIsExportingBackup(false);
     }
@@ -151,13 +144,13 @@ export function SettingsTab() {
       try {
         const parsed = JSON.parse(event.target?.result as string) as DatabaseBackupPayload;
         if (!parsed || !parsed.data) {
-          alert('ভুল ফরম্যাটের ব্যাকআপ ফাইল। দয়া করে সঠিক JSON ব্যাকআপ ফাইল নির্বাচন করুন।');
+          showToast('ভুল ফরম্যাটের ব্যাকআপ ফাইল। দয়া করে সঠিক JSON ব্যাকআপ ফাইল নির্বাচন করুন।', 'error');
           return;
         }
         setPendingRestoreData(parsed);
         setShowRestoreConfirmModal(true);
       } catch {
-        alert('ফাইলটি সঠিক JSON ফরম্যাটে নেই।');
+        showToast('ফাইলটি সঠিক JSON ফরম্যাটে নেই।', 'error');
       }
     };
     reader.readAsText(file);
@@ -174,9 +167,6 @@ export function SettingsTab() {
       setPendingRestoreData(null);
       await invalidate(qk.products, qk.categories, qk.orders, qk.reviews, qk.settings);
       showToast(`ডাটাবেস সফলভাবে রিস্টোর হয়েছে! (${res.counts.products} প্রোডাক্ট, ${res.counts.orders} অর্ডার, ${res.counts.categories} ক্যাটাগরি)`);
-    } catch (err) {
-      console.error('Restore error:', err);
-      alert('ডাটাবেস রিস্টোর করতে সমস্যা হয়েছে।');
     } finally {
       setIsRestoringBackup(false);
       setRestoreProgressMsg(null);

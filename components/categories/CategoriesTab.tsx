@@ -22,7 +22,6 @@ export function CategoriesTab() {
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryItem | null>(null);
 
   const refresh = () => invalidate(qk.categories, qk.products);
-  const fail = (err: unknown) => alert(err instanceof Error ? err.message : 'কিছু ভুল হয়েছে। আবার চেষ্টা করুন।');
 
   const openAddCategoryModal = () => {
     setEditingCategory(null);
@@ -77,11 +76,9 @@ export function CategoriesTab() {
     try {
       await deleteCategory(categoryToDelete.id);
       showToast(`"${categoryToDelete.name}" ক্যাটাগরি মুছে ফেলা হয়েছে`);
-      setCategoryToDelete(null);
       await refresh();
-    } catch (err) {
+    } finally {
       setCategoryToDelete(null);
-      fail(err); // e.g. blocked because products still use the category
     }
   };
 

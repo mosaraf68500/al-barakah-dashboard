@@ -23,6 +23,7 @@ import {
   Globe
 } from 'lucide-react';
 import { Product } from '@/types';
+import { useToast } from '@/providers/ToastProvider';
 
 interface QRCodeGeneratorModalProps {
   isOpen: boolean;
@@ -41,6 +42,8 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
   defaultProduct = null,
   customDomain = 'https://albarakahpremium.com'
 }) => {
+  const showToast = useToast();
+
   // Preset Targets
   const mustardOilProduct = products.find(
     (p) =>
@@ -164,7 +167,7 @@ export const QRCodeGeneratorModal: React.FC<QRCodeGeneratorModalProps> = ({
           setQrSvgString(svgStr);
         }
       } catch (err) {
-        console.error('Error generating QR code:', err);
+        if (isMounted) showToast(err instanceof Error ? err.message : 'QR কোড তৈরি করা যায়নি। আবার চেষ্টা করুন।', 'error');
       } finally {
         if (isMounted) setIsGenerating(false);
       }

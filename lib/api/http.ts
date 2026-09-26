@@ -2,6 +2,8 @@
  * Fetch helper for the admin app. Talks to the Express API. The access token is kept in sessionStorage;
  * the refresh token is an httpOnly cookie on the API host.
  */
+import { showToastFromOutsideReact } from '@/providers/ToastProvider';
+
 const ACCESS_KEY = 'abp_admin_access';
 const REFRESH_KEY = 'abp_admin_refresh';
 
@@ -85,7 +87,7 @@ export function refreshAdminAccessToken(): Promise<string | null> {
   return refreshing;
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+async function doFetch<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   headers.set('X-Abp-Client', 'admin');
@@ -101,7 +103,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}, retry = 
   const isAuthCall = path.includes('/admin-auth/login') || path.includes('/admin-auth/verify-otp') || path.includes('/admin-auth/refresh') || path.includes('/admin-auth/set-password');
   if (res.status === 401 && retry && !isAuthCall) {
     const next = await refreshAdminAccessToken();
-    if (next) return apiFetch<T>(path, init, false);
+    if (next) return doFetch<T>(path, init, false);
   }
   if (res.status === 401 && typeof window !== 'undefined' && !isAuthCall && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/verify-otp') && !window.location.pathname.startsWith('/set-password')) {
     window.location.href = '/login';
@@ -112,6 +114,21 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}, retry = 
     throw new ApiError(err.message || err.error || `HTTP error ${res.status}`, res.status, typeof err.error === 'string' ? err.error : undefined, err.details);
   }
   return res.json() as Promise<T>;
+}
+
+/**
+ * Public entry point. Any failure (thrown ApiError, or a network-level exception from fetch itself) shows an
+ * error toast automatically, then re-throws so callers can still do local cleanup (re-enable a button, etc.)
+ * without needing their own alert()/console.error - they just shouldn't swallow the rethrow.
+ */
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  try {
+    return await doFetch<T>(path, init);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন।';
+    showToastFromOutsideReact(message, 'error');
+    throw err;
+  }
 }
 
 export const post = <T,>(path: string, data?: unknown) => apiFetch<T>(path, { method: 'POST', body: JSON.stringify(data ?? {}) });

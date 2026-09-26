@@ -41,14 +41,10 @@ export function OrdersTab({ detailsId, courierOpen = false }: { detailsId?: stri
   const refresh = () => invalidate(qk.orders, qk.products);
 
   const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
-    try {
-      const res = await updateOrderStatus(orderId, newStatus as 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled');
-      if (res.stock !== 'none') showToast(res.stock === 'deducted' ? '📦 অর্ডার অনুযায়ী স্টক থেকে মাইনাস করা হয়েছে!' : '🔄 ক্যানসেল হওয়ায় স্টক পুনরায় যোগ করা হয়েছে!');
-      if (res.courier?.success) showToast(`✅ ${res.courier.message} (Consignment ID: ${res.courier.consignmentId})`);
-      await refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'স্ট্যাটাস আপডেট করা যায়নি।');
-    }
+    const res = await updateOrderStatus(orderId, newStatus as 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled');
+    if (res.stock !== 'none') showToast(res.stock === 'deducted' ? '📦 অর্ডার অনুযায়ী স্টক থেকে মাইনাস করা হয়েছে!' : '🔄 ক্যানসেল হওয়ায় স্টক পুনরায় যোগ করা হয়েছে!');
+    if (res.courier?.success) showToast(`✅ ${res.courier.message} (Consignment ID: ${res.courier.consignmentId})`);
+    await refresh();
   };
 
   const handleSendOrderToCourier = async (order: Order, preferredProvider?: 'steadfast' | 'pathao') => {
@@ -75,12 +71,10 @@ export function OrdersTab({ detailsId, courierOpen = false }: { detailsId?: stri
         await refresh();
         showToast(`✅ ${c.message} (Consignment ID: ${c.consignmentId})`);
       } else {
-        alert(`❌ কুরিয়ারে এন্ট্রি ব্যর্থ হয়েছে:\n${c.message || c.error}`);
-        showToast(`কুরিয়ার এন্ট্রি ব্যর্থ: ${c.message}`);
+        showToast(`কুরিয়ার এন্ট্রি ব্যর্থ: ${c.message}`, 'error');
       }
     } catch (err: any) {
-      alert(`❌ কুরিয়ার ত্রুটি: ${err.message}`);
-      showToast(`কুরিয়ার ত্রুটি: ${err.message}`);
+      showToast(`কুরিয়ার ত্রুটি: ${err.message}`, 'error');
     } finally {
       setCourierDispatchingOrderId(null);
     }
@@ -109,10 +103,9 @@ export function OrdersTab({ detailsId, courierOpen = false }: { detailsId?: stri
       showToast(`অর্ডার #${orderToDelete.id.slice(-6).toUpperCase()} ডাটাবেজ থেকে ডিলিট করা হয়েছে`);
       if (selectedOrderDetails?.id === orderToDelete.id) closeDetails();
       await refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'ডিলিট করা যায়নি।');
+    } finally {
+      setOrderToDelete(null);
     }
-    setOrderToDelete(null);
   };
 
   return (

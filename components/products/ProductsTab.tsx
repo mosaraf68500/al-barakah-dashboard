@@ -54,10 +54,9 @@ export function ProductsTab() {
       await deleteProduct(productToDelete.id);
       await invalidate(qk.products);
       showToast(`"${name}" প্রোডাক্টটি ডাটাবেজ থেকে ডিলিট করা হয়েছে`);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'ডিলিট করা যায়নি।');
+    } finally {
+      setProductToDelete(null);
     }
-    setProductToDelete(null);
   };
 
   const handleSaveLandingPageConfig = async (productId: string, config: ProductLandingPageConfig) => {

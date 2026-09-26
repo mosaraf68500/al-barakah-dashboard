@@ -1,11 +1,20 @@
 'use client';
 
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export type ToastKind = 'success' | 'error';
 
 const ToastContext = createContext<((msg: string, kind?: ToastKind) => void) | undefined>(undefined);
+
+/**
+ * Lets code outside the React tree (the apiFetch wrapper in lib/api/http.ts) raise a toast without a hook.
+ * Set by the single <ToastProvider> mounted at the app root; null before mount / after unmount.
+ */
+let externalShowToast: ((msg: string, kind?: ToastKind) => void) | null = null;
+export function showToastFromOutsideReact(msg: string, kind?: ToastKind) {
+  externalShowToast?.(msg, kind);
+}
 
 function inferKind(msg: string): ToastKind {
   if (msg.includes('✅')) return 'success';
@@ -24,6 +33,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setToast(null), next === 'error' ? 5200 : 3000);
   }, []);
+
+  useEffect(() => {
+    externalShowToast = showToast;
+    return () => {
+      externalShowToast = null;
+    };
+  }, [showToast]);
 
   const isError = toast?.kind === 'error';
 

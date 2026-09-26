@@ -18,26 +18,18 @@ export function StaffTab() {
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStaffName.trim() || !newStaffEmail.trim()) return;
-    try {
-      const member = await grantStaff({ name: newStaffName.trim(), email: newStaffEmail.trim(), role: newStaffRole });
-      await invalidate(qk.staff);
-      setNewStaffName('');
-      setNewStaffEmail('');
-      alert(`Access granted for ${member.email} with role: ${member.role === 'super_admin' ? 'Super Admin' : 'Admin'}`);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not grant access.');
-    }
+    const member = await grantStaff({ name: newStaffName.trim(), email: newStaffEmail.trim(), role: newStaffRole });
+    await invalidate(qk.staff);
+    setNewStaffName('');
+    setNewStaffEmail('');
+    alert(`Access granted for ${member.email} with role: ${member.role === 'super_admin' ? 'Super Admin' : 'Admin'}`);
   };
 
   const handleDeleteStaff = async (id: string, email: string) => {
     if (!window.confirm(`Revoke admin access for ${email}?`)) return;
-    try {
-      await revokeStaff(id);
-      await invalidate(qk.staff);
-      showToast('Admin access revoked');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not revoke access.');
-    }
+    await revokeStaff(id);
+    await invalidate(qk.staff);
+    showToast('Admin access revoked');
   };
 
   return (
