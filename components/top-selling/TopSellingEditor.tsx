@@ -2,14 +2,46 @@
 
 import { Check, Flame, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { SafeImage } from '@/components/shared/SafeImage';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { saveSettings } from '@/lib/api';
+import { saveSettings, uploadImageDataUrl } from '@/lib/api';
 import { qk, useInvalidate, useProducts, useSettings } from '@/hooks/useAdminData';
 import { compressImageFile } from '@/lib/imageCompressor';
 import { normalizeTopSelling } from '@/lib/domain/config';
 import { useToast } from '@/providers/ToastProvider';
-import type { TopSellingItem, TopSellingSectionConfig } from '@/types';
+import type { Product, TopSellingItem, TopSellingSectionConfig } from '@/types';
+import { AddTopSellingProductModal } from './AddTopSellingProductModal';
+
+async function withUploadedImages(cfg: TopSellingSectionConfig): Promise<TopSellingSectionConfig> {
+  const items = await Promise.all(
+    cfg.items.map(async (item) => ({
+      ...item,
+      // Keep badge in sync with badgeText so the storefront (which may read either) shows the edited label.
+      badge: (item.badgeText || item.badge || '').trim() || item.badge,
+      image: item.image ? await uploadImageDataUrl(item.image, 'banners') : item.image,
+    })),
+  );
+  return { ...cfg, items };
+}
+
+function itemFromProduct(product: Product, order: number): TopSellingItem {
+  return {
+    id: `top_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    productId: product.id,
+    name: product.name,
+    price: product.price,
+    originalPrice: product.originalPrice,
+    badge: 'HOT DEAL',
+    badgeText: '🔥 HOT DEAL',
+    badgeBgColor: '#e11d48',
+    overridePrice: product.price,
+    overrideOriginalPrice: product.originalPrice,
+    overrideWeight: product.weight || '1 Kg',
+    image: product.image || product.images?.[0] || '',
+    enabled: true,
+    order,
+  };
+}
 
 export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
   const showToast = useToast();
@@ -20,7 +52,16 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
   const [topSellingState, setTopSellingState] = useState<TopSellingSectionConfig>(() => normalizeTopSelling(settings?.topSelling));
   const [isSavingTopSelling, setIsSavingTopSelling] = useState(false);
   const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
   const loaded = useRef(Boolean(settings));
+  const topSellingStateRef = useRef(topSellingState);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savingLock = useRef(false);
+  const pendingSave = useRef(false);
+
+  useEffect(() => {
+    topSellingStateRef.current = topSellingState;
+  }, [topSellingState]);
 
   // Adopt the saved config once it arrives (first load only - never clobber unsaved edits on background refetches).
   useEffect(() => {
@@ -30,10 +71,75 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
     }
   }, [settings]);
 
+  useEffect(() => () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+  }, []);
+
+  const alreadyAddedIds = useMemo(
+    () => new Set(topSellingState.items.map((i) => i.productId).filter(Boolean) as string[]),
+    [topSellingState.items],
+  );
+
+  const handleSaveTopSellingAdmin = useCallback(async (newCfg: TopSellingSectionConfig, opts?: { quiet?: boolean }) => {
+    topSellingStateRef.current = newCfg;
+    if (savingLock.current) {
+      pendingSave.current = true;
+      return;
+    }
+    savingLock.current = true;
+    setIsSavingTopSelling(true);
+    try {
+      do {
+        pendingSave.current = false;
+        const uploadedCfg = await withUploadedImages(topSellingStateRef.current);
+        if (pendingSave.current) continue; // user kept typing while images uploaded
+        const saved = await saveSettings({ topSelling: uploadedCfg });
+        queryClient.setQueryData(qk.settings, saved);
+        if (pendingSave.current) continue;
+        if (saved.topSelling) {
+          const normalized = normalizeTopSelling(saved.topSelling);
+          setTopSellingState(normalized);
+          topSellingStateRef.current = normalized;
+        }
+      } while (pendingSave.current);
+      await invalidate(qk.settings);
+      if (!opts?.quiet) showToast('✅ টপ সেলিং সেকশন সংরক্ষিত হয়েছে!');
+    } catch (err) {
+      console.error('Error saving top selling config:', err);
+      alert(err instanceof Error ? err.message : 'টপ সেলিং সেভ করার সময় ত্রুটি হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+    } finally {
+      savingLock.current = false;
+      setIsSavingTopSelling(false);
+    }
+  }, [invalidate, queryClient, showToast]);
+
+  /** Debounced persist so title/subtitle/item text edits reach the storefront without relying only on the Save button. */
+  const scheduleSave = useCallback((next: TopSellingSectionConfig) => {
+    topSellingStateRef.current = next;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void handleSaveTopSellingAdmin(topSellingStateRef.current, { quiet: true });
+    }, 700);
+  }, [handleSaveTopSellingAdmin]);
+
+  const patchState = (updater: (prev: TopSellingSectionConfig) => TopSellingSectionConfig, persist: 'debounce' | 'now' | 'local' = 'debounce') => {
+    setTopSellingState((prev) => {
+      const next = updater(prev);
+      topSellingStateRef.current = next;
+      if (savingLock.current) pendingSave.current = true;
+      if (persist === 'debounce') scheduleSave(next);
+      else if (persist === 'now') {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        void handleSaveTopSellingAdmin(next, { quiet: true });
+      }
+      return next;
+    });
+  };
+
   const onToggleShowOnHomepage = async (enabled: boolean) => {
     setIsTogglingEnabled(true);
     try {
-      // Enabled only. The item draft stays in this component until Save Top Selling.
+      // Enabled only. The item draft stays in this component until the next full save.
       const saved = await saveSettings({ topSelling: { enabled } });
       queryClient.setQueryData(qk.settings, saved);
       setTopSellingState((current) => ({ ...current, enabled: Boolean(saved.topSelling?.enabled) }));
@@ -45,19 +151,30 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
     }
   };
 
-  const handleSaveTopSellingAdmin = async (newCfg: TopSellingSectionConfig) => {
-    setIsSavingTopSelling(true);
-    try {
-      setTopSellingState(newCfg);
-      await saveSettings({ topSelling: newCfg });
-      await invalidate(qk.settings);
-      showToast('✅ টপ সেলিং সেকশন সংরক্ষিত হয়েছে!');
-    } catch (err) {
-      console.error('Error saving top selling config:', err);
-      alert('টপ সেলিং সেভ করার সময় ত্রুটি হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
-    } finally {
-      setIsSavingTopSelling(false);
+  const patchItem = (idx: number, patch: Partial<TopSellingItem>, persist: 'debounce' | 'now' | 'local' = 'debounce') => {
+    patchState((prev) => {
+      const updatedItems = [...prev.items];
+      updatedItems[idx] = { ...updatedItems[idx], ...patch };
+      return { ...prev, items: updatedItems };
+    }, persist);
+  };
+
+  const addProductToTopSelling = (product: Product) => {
+    if (!product.image && !(product.images && product.images[0])) {
+      alert('এই প্রোডাক্টের কোনো ছবি নেই। আগে প্রোডাক্টে ছবি যোগ করুন, তারপর আবার চেষ্টা করুন।');
+      return;
     }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const newItem = itemFromProduct(product, topSellingStateRef.current.items.length + 1);
+    const updated: TopSellingSectionConfig = {
+      ...topSellingStateRef.current,
+      items: [...topSellingStateRef.current.items, newItem],
+    };
+    setTopSellingState(updated);
+    topSellingStateRef.current = updated;
+    setShowAddProductModal(false);
+    showToast(`✅ "${product.name}" টপ সেলিং-এ যোগ হয়েছে`);
+    void handleSaveTopSellingAdmin(updated, { quiet: true });
   };
 
   return (
@@ -74,35 +191,13 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                     </h3>
                   </div>
                   <p className="text-xs text-stone-500 mt-1">
-                    টপ সেলিং সেকশনের টাইটেল, অফার সাবটাইটেল এবং ৪টি ব্যানার ও অফার প্রোডাক্ট এডিট করে লাইভ সেভ করুন।
+                    টপ সেলিং সেকশনের টাইটেল, অফার সাবটাইটেল এবং ৪টি ব্যানার ও অফার প্রোডাক্ট এডিট করলেই অটো-সেভ হবে এবং ল্যান্ডিং পেজে দেখাবে।
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      const newItem: TopSellingItem = {
-                        id: `top_${Date.now()}`,
-                        productId: products[0]?.id || 'custom',
-                        name: products[0]?.name || 'New Top Selling Item',
-                        price: products[0]?.price || 850,
-                        originalPrice: products[0]?.originalPrice || 1050,
-                        badge: 'HOT DEAL',
-                        badgeText: '🔥 HOT DEAL',
-                        badgeBgColor: '#e11d48',
-                        overridePrice: products[0]?.price || 850,
-                        overrideOriginalPrice: products[0]?.originalPrice || 1050,
-                        overrideWeight: products[0]?.weight || '1 Kg',
-                        image: products[0]?.image || 'https://images.unsplash.com/photo-1578849278619-e73505e9610f?w=800&auto=format&fit=crop&q=80',
-                        enabled: true,
-                        order: topSellingState.items.length + 1,
-                      };
-                      const updated = {
-                        ...topSellingState,
-                        items: [...topSellingState.items, newItem]
-                      };
-                      handleSaveTopSellingAdmin(updated);
-                    }}
+                    onClick={() => setShowAddProductModal(true)}
                     className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -137,7 +232,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                     type="text"
                     value={topSellingState.title}
                     onChange={(e) => {
-                      setTopSellingState({ ...topSellingState, title: e.target.value });
+                      patchState((prev) => ({ ...prev, title: e.target.value }));
                     }}
                     className="w-full px-3 py-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0a5c36]"
                   />
@@ -148,7 +243,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                     type="text"
                     value={topSellingState.subtitle || ''}
                     onChange={(e) => {
-                      setTopSellingState({ ...topSellingState, subtitle: e.target.value });
+                      patchState((prev) => ({ ...prev, subtitle: e.target.value }));
                     }}
                     className="w-full px-3 py-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0a5c36]"
                   />
@@ -171,6 +266,20 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
 
               {/* Items List */}
               <div className="space-y-4">
+                {topSellingState.items.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-10 text-center">
+                    <p className="text-sm font-semibold text-stone-700">এখনো কোনো টপ সেলিং আইটেম নেই</p>
+                    <p className="text-xs text-stone-500 mt-1">Add Item চাপুন এবং স্টোরের প্রোডাক্ট থেকে বেছে নিন</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddProductModal(true)}
+                      className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0a5c36] hover:bg-[#08482a] text-white text-xs font-bold cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Item
+                    </button>
+                  </div>
+                ) : null}
                 {topSellingState.items.map((item, idx) => {
                   const linkedProduct = products.find((p) => p.id === item.productId);
                   return (
@@ -190,9 +299,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                               type="checkbox"
                               checked={item.enabled}
                               onChange={(e) => {
-                                const updatedItems = [...topSellingState.items];
-                                updatedItems[idx].enabled = e.target.checked;
-                                setTopSellingState({ ...topSellingState, items: updatedItems });
+                                patchItem(idx, { enabled: e.target.checked }, 'now');
                               }}
                               className="rounded text-[#0a5c36] focus:ring-[#0a5c36] cursor-pointer"
                             />
@@ -216,7 +323,6 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                        {/* Left: Image Preview, Direct File Upload & URL */}
                         <div className="md:col-span-4 space-y-2">
                           <label className="text-[11px] font-bold text-stone-600 block">
                             Custom Banner / Photo (ছবি আপলোড বা লিংক)
@@ -228,7 +334,6 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                               referrerPolicy="no-referrer"
                               className="w-full h-full object-contain"
                             />
-                            {/* Overlay file upload button with auto-compression */}
                             <label className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-xs font-bold">
                               <Upload className="w-5 h-5 mb-1" />
                               <span>ছবি আপলোড করুন</span>
@@ -241,9 +346,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                                   if (file) {
                                     try {
                                       const compressed = await compressImageFile(file, 800, 800, 0.8);
-                                      const updatedItems = [...topSellingState.items];
-                                      updatedItems[idx].image = compressed;
-                                      setTopSellingState({ ...topSellingState, items: updatedItems });
+                                      patchItem(idx, { image: compressed }, 'debounce');
                                     } catch (err) {
                                       console.error('Failed to compress image:', err);
                                     }
@@ -252,16 +355,14 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                               />
                             </label>
                           </div>
-                          
+
                           <div className="flex gap-1.5">
                             <input
                               type="text"
                               value={item.image || ''}
                               placeholder="Paste direct Image URL or link..."
                               onChange={(e) => {
-                                const updatedItems = [...topSellingState.items];
-                                updatedItems[idx].image = e.target.value;
-                                setTopSellingState({ ...topSellingState, items: updatedItems });
+                                patchItem(idx, { image: e.target.value });
                               }}
                               className="flex-1 px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0a5c36]"
                             />
@@ -277,9 +378,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                                   if (file) {
                                     try {
                                       const compressed = await compressImageFile(file, 800, 800, 0.8);
-                                      const updatedItems = [...topSellingState.items];
-                                      updatedItems[idx].image = compressed;
-                                      setTopSellingState({ ...topSellingState, items: updatedItems });
+                                      patchItem(idx, { image: compressed }, 'debounce');
                                     } catch (err) {
                                       console.error('Failed to compress image:', err);
                                     }
@@ -290,7 +389,6 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                           </div>
                         </div>
 
-                        {/* Right: Product linking & metadata overrides */}
                         <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="text-[11px] font-bold text-stone-600 block mb-1">
@@ -299,11 +397,9 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                             <select
                               value={item.productId}
                               onChange={(e) => {
-                                const updatedItems = [...topSellingState.items];
                                 const selProd = products.find((p) => p.id === e.target.value);
                                 if (selProd) {
-                                  updatedItems[idx] = {
-                                    ...updatedItems[idx],
+                                  patchItem(idx, {
                                     productId: selProd.id,
                                     name: selProd.name,
                                     image: selProd.image,
@@ -312,11 +408,10 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                                     overridePrice: selProd.price,
                                     overrideOriginalPrice: selProd.originalPrice,
                                     overrideWeight: selProd.weight || '১ কেজি',
-                                  };
+                                  });
                                 } else {
-                                  updatedItems[idx].productId = e.target.value;
+                                  patchItem(idx, { productId: e.target.value });
                                 }
-                                setTopSellingState({ ...topSellingState, items: updatedItems });
                               }}
                               className="w-full px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none"
                             >
@@ -335,9 +430,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                               value={item.name || ''}
                               placeholder={linkedProduct?.name || 'Product Title'}
                               onChange={(e) => {
-                                const updatedItems = [...topSellingState.items];
-                                updatedItems[idx].name = e.target.value;
-                                setTopSellingState({ ...topSellingState, items: updatedItems });
+                                patchItem(idx, { name: e.target.value });
                               }}
                               className="w-full px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none"
                             />
@@ -349,12 +442,11 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                             </label>
                             <input
                               type="text"
-                              value={item.badgeText || ''}
+                              value={item.badgeText || item.badge || ''}
                               placeholder="🔥 HOT DEAL"
                               onChange={(e) => {
-                                const updatedItems = [...topSellingState.items];
-                                updatedItems[idx].badgeText = e.target.value;
-                                setTopSellingState({ ...topSellingState, items: updatedItems });
+                                const val = e.target.value;
+                                patchItem(idx, { badgeText: val, badge: val });
                               }}
                               className="w-full px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none"
                             />
@@ -369,9 +461,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                               value={item.overrideWeight || ''}
                               placeholder="1 Kg"
                               onChange={(e) => {
-                                const updatedItems = [...topSellingState.items];
-                                updatedItems[idx].overrideWeight = e.target.value;
-                                setTopSellingState({ ...topSellingState, items: updatedItems });
+                                patchItem(idx, { overrideWeight: e.target.value });
                               }}
                               className="w-full px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none"
                             />
@@ -387,10 +477,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                               placeholder={String(linkedProduct?.price || 0)}
                               onChange={(e) => {
                                 const val = Number(e.target.value) || 0;
-                                const updatedItems = [...topSellingState.items];
-                                updatedItems[idx].overridePrice = val;
-                                updatedItems[idx].price = val;
-                                setTopSellingState({ ...topSellingState, items: updatedItems });
+                                patchItem(idx, { overridePrice: val, price: val });
                               }}
                               className="w-full px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none"
                             />
@@ -406,10 +493,7 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                               placeholder={String(linkedProduct?.originalPrice || 0)}
                               onChange={(e) => {
                                 const val = Number(e.target.value) || 0;
-                                const updatedItems = [...topSellingState.items];
-                                updatedItems[idx].overrideOriginalPrice = val;
-                                updatedItems[idx].originalPrice = val;
-                                setTopSellingState({ ...topSellingState, items: updatedItems });
+                                patchItem(idx, { overrideOriginalPrice: val, originalPrice: val });
                               }}
                               className="w-full px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none"
                             />
@@ -421,6 +505,15 @@ export function TopSellingEditor({ embedded = false }: { embedded?: boolean }) {
                 })}
               </div>
             </div>
+
+            {showAddProductModal && (
+              <AddTopSellingProductModal
+                products={products}
+                alreadyAddedIds={alreadyAddedIds}
+                onClose={() => setShowAddProductModal(false)}
+                onAdd={addProductToTopSelling}
+              />
+            )}
           </div>
   );
 }
