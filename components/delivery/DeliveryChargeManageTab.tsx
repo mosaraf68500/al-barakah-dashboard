@@ -63,18 +63,22 @@ export function DeliveryChargeManageTab() {
   };
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <div>
-        <h2 className="text-lg font-black text-stone-900 flex items-center gap-2">
-          <Truck className="w-5 h-5 text-emerald-700" />
-          Delivery Charge Manage
-        </h2>
-        <p className="text-xs text-stone-500 mt-1">
-          Checkout-এর ডেলিভারি চার্জ ও কোন পেমেন্ট পদ্ধতি দেখাবে — এখান থেকে কন্ট্রোল করুন।
-        </p>
+    <div className="p-6 sm:p-8 space-y-6 w-full">
+      <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+        <div className="flex items-start gap-3.5">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-100 text-emerald-800">
+            <Truck className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-stone-900 font-serif">Delivery Charge Manage</h3>
+            <p className="text-xs text-stone-500 mt-1">
+              Checkout-এর ডেলিভারি চার্জ ও কোন পেমেন্ট পদ্ধতি দেখাবে — এখান থেকে কন্ট্রোল করুন।
+            </p>
+          </div>
+        </div>
       </div>
 
-      <section className="bg-white rounded-2xl border border-stone-200 p-5 sm:p-6 space-y-4 shadow-sm">
+      <section className="bg-white rounded-2xl border border-stone-200 p-5 sm:p-6 space-y-4 shadow-xs w-full">
         <h3 className="text-sm font-bold text-stone-900 border-b border-stone-100 pb-2">ডেলিভারি চার্জ (৳)</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="block space-y-1.5">
@@ -100,29 +104,31 @@ export function DeliveryChargeManageTab() {
         </div>
       </section>
 
-      <section className="bg-white rounded-2xl border border-stone-200 p-5 sm:p-6 space-y-3 shadow-sm">
+      <section className="bg-white rounded-2xl border border-stone-200 p-5 sm:p-6 space-y-3 shadow-xs w-full">
         <h3 className="text-sm font-bold text-stone-900 border-b border-stone-100 pb-2">পেমেন্ট পদ্ধতি (Checkout-এ দেখাবে)</h3>
         <p className="text-[11px] text-stone-500">টিক থাকলে storefront checkout-এ দেখাবে; টিক না থাকলে লুকাবে।</p>
 
-        <PaymentToggle
-          checked={enableAdvance}
-          onChange={setEnableAdvance}
-          title="ক্যাশ অন ডেলিভারি (অগ্রিম ডেলিভারি চার্জ)"
-          badge="সুপারিশকৃত"
-          badgeClass="bg-[#0a5c36] text-white"
-        />
-        <PaymentToggle
-          checked={enableFullBkash}
-          onChange={setEnableFullBkash}
-          title="সম্পূর্ণ পেমেন্ট বিকাশ (Full bKash Payment)"
-          badge="ফুল পেইড"
-          badgeClass="bg-pink-100 text-[#e2136e] border border-pink-200"
-        />
-        <PaymentToggle
-          checked={enableFullCod}
-          onChange={setEnableFullCod}
-          title="সম্পূর্ণ ক্যাশ অন ডেলিভারি (Full COD)"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <PaymentToggle
+            checked={enableAdvance}
+            onChange={setEnableAdvance}
+            title="ক্যাশ অন ডেলিভারি (অগ্রিম ডেলিভারি চার্জ)"
+            badge="সুপারিশকৃত"
+            badgeClass="bg-[#0a5c36] text-white"
+          />
+          <PaymentToggle
+            checked={enableFullBkash}
+            onChange={setEnableFullBkash}
+            title="সম্পূর্ণ পেমেন্ট বিকাশ (Full bKash Payment)"
+            badge="ফুল পেইড"
+            badgeClass="bg-pink-100 text-[#e2136e] border border-pink-200"
+          />
+          <PaymentToggle
+            checked={enableFullCod}
+            onChange={setEnableFullCod}
+            title="সম্পূর্ণ ক্যাশ অন ডেলিভারি (Full COD)"
+          />
+        </div>
       </section>
 
       <button
@@ -152,7 +158,7 @@ function PaymentToggle({
   badgeClass?: string;
 }) {
   return (
-    <label className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer">
+    <label className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer h-full">
       <input
         type="checkbox"
         checked={checked}
