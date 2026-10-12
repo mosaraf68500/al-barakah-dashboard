@@ -12,6 +12,7 @@ const ROUTES: Record<string, string> = {
   categories: '/categories',
   reviews: '/reviews',
   staff: '/staff',
+  deliveryCharge: '/delivery-charge',
   settings: '/settings',
   qrcode: '/qr-studio',
 };

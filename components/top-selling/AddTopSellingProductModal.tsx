@@ -88,7 +88,7 @@ export function AddTopSellingProductModal({
                   onClick={() => setSelectedId(p.id)}
                   className={`w-full flex items-center gap-3 p-3 rounded-2xl border text-left transition-colors cursor-pointer ${
                     isSelected
-                      ? 'border-[#0a5c36] bg-emerald-50 ring-1 ring-[#0a5c36]/
+                      ? 'border-[#0a5c36] bg-emerald-50 ring-1 ring-[#0a5c36]'
                       : 'border-stone-200 bg-white hover:bg-stone-50'
                   }`}
                 >

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Flame, Layers } from 'lucide-react';
-import { LayoutDashboard, LogOut, Package, QrCode, Settings, ShieldCheck, ShoppingCart, Sparkles, Star, Tag, TrendingUp, Users, X } from 'lucide-react';
+import { LayoutDashboard, LogOut, Package, QrCode, Settings, ShieldCheck, ShoppingCart, Sparkles, Star, Tag, TrendingUp, Truck, Users, X } from 'lucide-react';
 import { computeMetrics } from '@/lib/domain/metrics';
 import { useCategories, useOrders, useProducts, useSettings, useStaff } from '@/hooks/useAdminData';
 import { useAdminAuth } from '@/providers/AdminAuthProvider';
@@ -147,6 +147,12 @@ export function Sidebar({ mobileNavOpen, onClose }: { mobileNavOpen: boolean; on
             icon={<QrCode className="w-4 h-4 text-amber-400" />}
             label="QR & Sticker Studio"
             badge={<span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">NEW</span>}
+          />
+          <NavItem
+            href="/delivery-charge"
+            active={is('/delivery-charge')}
+            icon={<Truck className="w-4 h-4 text-emerald-300" />}
+            label="Delivery Charge Manage"
           />
           <NavItem href="/settings" active={is('/settings')} icon={<Settings className="w-4 h-4 text-emerald-300" />} label="Settings" />
         </nav>

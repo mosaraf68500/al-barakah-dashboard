@@ -22,6 +22,7 @@ const TITLES: [string, string][] = [
   ['/reviews', 'Customer Reviews Moderation'],
   ['/staff', 'Admins & Staff Access Control'],
   ['/qr-studio', 'QR & Sticker Studio'],
+  ['/delivery-charge', 'Delivery Charge Manage'],
   ['/settings', 'Store Configuration & Settings'],
 ];
 

@@ -164,6 +164,10 @@ export interface DeliveryConfig {
   deliveryNotice: string;
   requireAdvanceDeliveryCharge?: boolean; // If true, delivery charge must be paid in advance to prevent fake orders
   advanceDeliveryNotice?: string;
+  /** When false, hide that payment option on checkout. Omitted/true = show. */
+  enableAdvanceDeliveryPayment?: boolean;
+  enableFullBkashPayment?: boolean;
+  enableFullCodPayment?: boolean;
 }
 
 export const DEFAULT_DELIVERY_CONFIG: DeliveryConfig = {
@@ -178,6 +182,9 @@ export const DEFAULT_DELIVERY_CONFIG: DeliveryConfig = {
   deliveryNotice: 'সারা বাংলাদেশে ক্যাশ অন ডেলিভারি সুবিধা রয়েছে।',
   requireAdvanceDeliveryCharge: true,
   advanceDeliveryNotice: 'ফেক অর্ডার ও রিটার্ন রোধে শুধুমাত্র ডেলিভারি চার্জ অগ্রিম বিকাশ করতে হবে। বাকি পণ্যের মূল্য পার্সেল হাতে পেয়ে পরিশোধ করবেন।',
+  enableAdvanceDeliveryPayment: true,
+  enableFullBkashPayment: true,
+  enableFullCodPayment: true,
 };
 
 export interface OrderNotificationConfig {
